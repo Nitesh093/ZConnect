@@ -1,15 +1,15 @@
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
-const authRepository = require('./auth.repository.js');
+const UserRepository = require('../User/user.repository.js');
 const EmailService = require('../Email-verification/emailServices.js');
 const jwt = require('jsonwebtoken');
 
 class AuthService {
   async registerUser(username, email, password, image) {
     try {
-      const existingEmailUser = await authRepository.findUserByEmail(email);
-      const existingUsernameUser = await authRepository.findUserByUsername(username);
+      const existingEmailUser = await UserRepository.findUserByEmail(email);
+      const existingUsernameUser = await UserRepository.findUserByUsername(username);
 
       if (existingEmailUser || existingUsernameUser) {
         throw new Error('Email or username already registered');
@@ -17,7 +17,7 @@ class AuthService {
 
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const hashedPassword = await bcrypt.hash(password, 10);
-      const user = await authRepository.createUser(username, email, hashedPassword, image, verificationToken);
+      const user = await UserRepository.createUser(username, email, hashedPassword, image, verificationToken);
 
       // Send verification email
       await EmailService.sendVerificationEmail(user.email, user.verificationToken);
@@ -30,7 +30,7 @@ class AuthService {
 
   async verifyEmail(token) {
     try {
-      const user = await authRepository.findUserByToken(token);
+      const user = await UserRepository.findUserByToken(token);
 
       if (!user) {
         throw new Error('Invalid verification token');
@@ -49,7 +49,7 @@ class AuthService {
 
   async forgetPassword(email) {
     try {
-      const user = await authRepository.findUserByEmail(email);
+      const user = await UserRepository.findUserByEmail(email);
 
       if (!user) {
         throw new Error('User not found');
@@ -71,7 +71,7 @@ class AuthService {
 
   async resetPassword(verification_token, newPassword) {
     try {
-      const user = await authRepository.findUserByToken(verification_token);
+      const user = await UserRepository.findUserByToken(verification_token);
 
       if (!user || user.verificationToken !== verification_token) {
         throw new Error('Invalid or expired reset token');
@@ -92,7 +92,7 @@ class AuthService {
 
   async loginUser(email, password) {
     try {
-      const user = await authRepository.findUserByEmail(email);
+      const user = await UserRepository.findUserByEmail(email);
 
       if (!user || !(await bcrypt.compare(password, user.password))) {
         throw new Error('Invalid credentials');

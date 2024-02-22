@@ -1,6 +1,6 @@
 const User = require('../User/model/userModel');
 
-class AuthRepository {
+class UserRepository {
   async createUser(username, email, password, image, verificationToken) {
     try {
       const user = new User({
@@ -47,4 +47,4 @@ class AuthRepository {
   }
 }
 
-module.exports = new AuthRepository();
+module.exports = new UserRepository();
