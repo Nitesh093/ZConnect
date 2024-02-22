@@ -1,22 +1,23 @@
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
-const userRepository = require('../repositories/userRepository.js');
-const EmailService=require('./emailServices.js')
+const authRepository = require('./auth.repository.js');
+const EmailService = require('../Email-verification/emailServices.js');
+const jwt = require('jsonwebtoken');
 
-
-class AuthServices{
+class AuthService {
   async registerUser(username, email, password, image) {
     try {
-      const existingEmailUser = await userRepository.findUserByEmail(email);
-      const existingUsernameUser = await userRepository.findUserByUsername(username);
+      const existingEmailUser = await authRepository.findUserByEmail(email);
+      const existingUsernameUser = await authRepository.findUserByUsername(username);
 
       if (existingEmailUser || existingUsernameUser) {
         throw new Error('Email or username already registered');
       }
+
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const hashedPassword = await bcrypt.hash(password, 10);
-      const user = await userRepository.createUser(username, email, hashedPassword, image,verificationToken);
+      const user = await authRepository.createUser(username, email, hashedPassword, image, verificationToken);
 
       // Send verification email
       await EmailService.sendVerificationEmail(user.email, user.verificationToken);
@@ -29,7 +30,7 @@ class AuthServices{
 
   async verifyEmail(token) {
     try {
-      const user = await userRepository.findUserByToken(token);
+      const user = await authRepository.findUserByToken(token);
 
       if (!user) {
         throw new Error('Invalid verification token');
@@ -48,7 +49,7 @@ class AuthServices{
 
   async forgetPassword(email) {
     try {
-      const user = await userRepository.findUserByEmail(email);
+      const user = await authRepository.findUserByEmail(email);
 
       if (!user) {
         throw new Error('User not found');
@@ -70,15 +71,15 @@ class AuthServices{
 
   async resetPassword(verification_token, newPassword) {
     try {
-      const user = await userRepository.findUserByToken(verification_token);
+      const user = await authRepository.findUserByToken(verification_token);
 
-      if (!user || user.verificationToken !== verification_token ) {
+      if (!user || user.verificationToken !== verification_token) {
         throw new Error('Invalid or expired reset token');
       }
+
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       // Update the password and clear the reset token
       user.password = hashedPassword;
-      user.verificationToken = undefined;
       user.verificationToken = undefined;
 
       await user.save();
@@ -88,6 +89,36 @@ class AuthServices{
       throw error;
     }
   }
+
+  async loginUser(email, password) {
+    try {
+      const user = await authRepository.findUserByEmail(email);
+
+      if (!user || !(await bcrypt.compare(password, user.password))) {
+        throw new Error('Invalid credentials');
+      }
+
+      const token = this.generateToken(user);
+      const expiresIn = process.env.JWT_EXPIRES_IN || '1h'; // You can adjust the expiration time
+
+      return { token, expires_in: expiresIn };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  generateToken(user) {
+    const secretKey = process.env.JWT_SECRET_KEY || 'your_secret_key';
+    const expiresIn = process.env.JWT_EXPIRES_IN || '1h';
+
+    const payload = {
+      userId: user._id,
+      email: user.email
+      // Add more claims as needed
+    };
+
+    return jwt.sign(payload, secretKey, { expiresIn });
+  }
 }
 
-module.exports = new AuthServices();
+module.exports = new AuthService();

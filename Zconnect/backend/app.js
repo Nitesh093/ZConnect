@@ -2,15 +2,15 @@ const  express= require("express")
 const app=express()
 require('dotenv').config()
 const PORT=process.env.PORT
-const db=require("./db/db")
-const authRoutes=require("./routes/authRoutes")
-const loginRoutes=require("./routes/loginRoutes")
+const db=require("./config/db")
+const authRoutes=require("./Auth/auth.route")
+
 
 
 app.use(express.json());
 
 
-app.use('/api',authRoutes,loginRoutes);
+app.use('/api',authRoutes);
 
 
 
