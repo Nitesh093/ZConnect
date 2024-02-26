@@ -1,30 +1,42 @@
+// multerMiddleware.js
 const multer = require('multer');
-const path = require('path');
+const cloudinary = require('../config/config.cloudinary'); // Adjust the path accordingly
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './profilePic/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-const fileFilter = (req, file, cb) => {
-  const allowedFileTypes = /jpeg|jpg|png/;
-  const extname = allowedFileTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedFileTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    cb('Error: Images only!');
-  }
+const uploadToCloudinary = (fileBuffer) => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream({ resource_type: 'image' }, (error, result) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result.secure_url);
+      }
+    }).end(fileBuffer);
+  });
 };
 
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-});
+const multerMiddleware = (req, res, next) => {
+  upload.single('image')(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ error: 'Image file is required' });
+    }
 
-module.exports = upload;
+    if (!req.file) {
+      return res.status(400).json({ error: 'Image file is required' });
+    }
+
+    try {
+      const imageUrl = await uploadToCloudinary(req.file.buffer);
+      req.imageUrl = imageUrl;
+      next();
+    } catch (error) {
+      console.error('Error uploading to Cloudinary:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+};
+
+module.exports = multerMiddleware;
+ 

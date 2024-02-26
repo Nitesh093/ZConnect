@@ -10,7 +10,7 @@ class AuthController {
         throw new Error('Image is required!');
       }
 
-      const imagePath = req.file.filename;
+      const imagePath = req.imageUrl;
 
       await authServices.registerUser(username, email, password, imagePath);
       res.status(200).json({ message: 'Successful registration. Check email for verification.' });
