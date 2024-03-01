@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const UserRepository = require('../User/user.repository.js');
 const EmailService = require('../Email-verification/emailServices.js');
-const jwt = require('jsonwebtoken');
+const {generateToken} = require('../middleware/jwtMiddleware.js');
 
 class AuthService {
   async registerUser(username, email, password, image) {
@@ -93,12 +93,13 @@ class AuthService {
   async loginUser(email, password) {
     try {
       const user = await UserRepository.findUserByEmail(email);
+      
 
       if (!user || !(await bcrypt.compare(password, user.password))) {
         throw new Error('Invalid credentials');
       }
 
-      const token = this.generateToken(user);
+      const token = generateToken(user);
       const expiresIn = process.env.JWT_EXPIRES_IN || '1h'; // You can adjust the expiration time
 
       return { token, expires_in: expiresIn };
@@ -107,18 +108,7 @@ class AuthService {
     }
   }
 
-  generateToken(user) {
-    const secretKey = process.env.JWT_SECRET_KEY || 'your_secret_key';
-    const expiresIn = process.env.JWT_EXPIRES_IN || '1h';
-
-    const payload = {
-      userId: user._id,
-      email: user.email
-      // Add more claims as needed
-    };
-
-    return jwt.sign(payload, secretKey, { expiresIn });
-  }
+  
 }
 
 module.exports = new AuthService();

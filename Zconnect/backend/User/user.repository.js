@@ -1,3 +1,4 @@
+const { ObjectId } = require('mongoose').Types;
 const User = require('../User/model/userModel');
 
 class UserRepository {
@@ -41,6 +42,26 @@ class UserRepository {
   async findUserByToken(verificationToken) {
     try {
       return await User.findOne({ verificationToken });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findUserByTerm(searchTerm, offset, currentUserId,limit = 10, ) {
+    try {
+      const regex = new RegExp(searchTerm, 'i'); // 'i' for case-insensitive
+  
+      const filteredUsers = await User.find({
+        $and: [
+          { $or: [{ username: regex }, { email: regex }] },
+          { _id: { $ne: new ObjectId(currentUserId) } }, // Convert to ObjectId
+        ],
+      })
+        .skip(offset * limit)
+        .limit(limit)
+        .select('-password -verificationToken');
+  
+      return filteredUsers;
     } catch (error) {
       throw error;
     }
