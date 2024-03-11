@@ -1,5 +1,4 @@
 // chat.controller.js
-
 const chatService = require('./chat.service');
 
 class ChatController {

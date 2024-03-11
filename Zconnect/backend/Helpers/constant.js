@@ -11,14 +11,14 @@
     LEAVE_CHAT_EVENT: "leaveChat",
     //  when admin updates a group name
     UPDATE_GROUP_NAME_EVENT: "updateGroupName",
-    //  when new message is received
-    MESSAGE_RECEIVED_EVENT: "messageReceived",
-    //  when there is new one on one chat, new group chat or user gets added in the group
-    NEW_CHAT_EVENT: "newChat",
+    //  when new message is Sent by user 
+    NEW_MESSAGE_SEND: "MessageSent",
+    //  when new message is recive 
+    NEW_MESSAGE_RECEIVE: "MessageReceive",
     //  when there is an error in socket
     SOCKET_ERROR_EVENT: "socketError",
     //  when participant stops typing
-    STOP_TYPING_EVENT: "stopTyping",
+    STOP_TYPING_EVENT: "stopTyping", 
     //  when participant starts typing
     TYPING_EVENT: "typing",
   });
